@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<!-- CSS only -->
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css"
+			rel="stylesheet"
+			integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0"
+			crossorigin="anonymous"
+		/>
+		<!-- JavaScript Bundle with Popper -->
+		<script
+			src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"
+			integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8"
+			crossorigin="anonymous"
+		></script>
+
+		<title>Home</title>
+		<style>
+			#addTransaction,
+			#blockchain,
+			#pendingTransaction,
+			#findBlock {
+				margin: auto;
+				width: 80%;
+				padding: 1rem;
+				margin-top: 1rem;
+			}
+			.wrap {
+				display: flex;
+				flex-direction: row !important;
+				flex-wrap: wrap !important;
+			}
+			.mlb {
+				margin-left: 1rem;
+				margin-bottom: 1rem;
+			}
+			.mb {
+				margin-bottom: 1rem;
+			}
+
+			.strong {
+				font-weight: 500;
+			}
+			.ul {
+				list-style: none;
+			}
+		</style>
+	</head>
+	<body>
+		<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+			<div class="container-fluid">
+				<a class="navbar-brand" href="#">BlockChain</a>
+				<button
+					class="navbar-toggler"
+					type="button"
+					data-bs-toggle="collapse"
+					data-bs-target="#navbarNav"
+					aria-controls="navbarNav"
+					aria-expanded="false"
+					aria-label="Toggle navigation"
+				>
+					<span class="navbar-toggler-icon"></span>
+				</button>
+				<div class="collapse navbar-collapse" id="navbarNav">
+					<ul class="navbar-nav">
+						<li class="nav-item">
+							<a class="nav-link active" aria-current="page" href="#">Home</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#">Search block</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#">Create Transaction</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+		<div id="addTransaction" class="card">
+			<h1> Add Transaction </h1>
+			<form
+				action="/transaction/broadcast/"
+				method="post"
+				onsubmit=" event.preventDefault(); return addTransactions()"
+			>
+				<div class="mb-3">
+					<label for="exampleFormControlInput1" class="form-label"
+						>Amount</label
+					>
+					<input
+						type="number"
+						class="form-control"
+						id="amount"
+						placeholder="1000"
+						required
+					/>
+				</div>
+				<div class="mb-3">
+					<label for="exampleFormControlTextarea1" class="form-label"
+						>Sender</label
+					>
+					<input type="text" class="form-control" id="sender" required />
+				</div>
+				<div class="mb-3">
+					<label for="exampleFormControlTextarea1" class="form-label"
+						>Receiver</label
+					>
+					<input type="text" class="form-control" id="recipient" required />
+				</div>
+				<input type="submit" class="btn btn-dark" value="Add Transaction" />
+			</form>
+		</div>
+		<div id="findBlock" class="card">
+			<h1> Find Block </h1>
+			<form
+				action="/transaction/broadcast/"
+				method="post"
+				onsubmit=" event.preventDefault(); return addTransactions()"
+			>
+				<div class="mb-3">
+					<label for="exampleFormControlInput1" class="form-label"
+						>Enter Block Hash</label
+					>
+					<input
+						type="number"
+						class="form-control"
+						id="amount"
+						placeholder="1620550979041"
+						required
+					/>
+				</div>
+				<input type="submit" class="btn btn-dark" value="Find Block" />
+			</form>
+		</div>
+		<div id="blockchain">
+			<span><h2>Blocks in blockchain</h2></span>
+			<button class="btn btn-dark" onclick="addTransactions()">Refresh</button>
+			<br />
+			<br />
+			<div class="blocks wrap"></div>
+		</div>
+		<div id="pendingTransaction">
+			<h2>Pending Transactions</h2>
+		</div>
+	</body>
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"
+		integrity="sha512-bZS47S7sPOxkjU/4Bt0zrhEtWx0y0CRkhEp8IckzK+ltifIIE9EMIMTuT/mEzoIMewUINruDBIR/jJnbguonqQ=="
+		crossorigin="anonymous"
+	></script>
+	<script>
+		const addBlockOnUI = (data) => {
+			var chainFrag = document.createDocumentFragment();
+
+			data.map((item, index) => {
+				var div = document.createElement("div");
+				div.className = "card mb";
+				div.style.width = "16rem";
+				div.style.padding = "1rem";
+				div.style.borderRadius = "5px";
+
+				Object.entries(item).map((value) => {
+					var innerdiv = document.createElement("div");
+					innerdiv.innerHTML =
+						value[0] + " : " + "<span class='strong'>" + value[1] + "</span>";
+
+					div.appendChild(innerdiv);
+				});
+
+				chainFrag.appendChild(div);
+				if (index != data.length - 1) {
+					var arrow = document.createElement("h1");
+					// arrow.innerHTML = "&#8594;";
+					arrow.innerHTML = "&#8680;";
+
+					arrow.style.alignSelf = "center";
+
+					chainFrag.appendChild(arrow);
+				}
+			});
+			document.querySelector(".blocks").appendChild(chainFrag);
+		};
+
+		const changePendingTransactiononUI = (data) => {
+			var chainFrag = document.createDocumentFragment();
+			var ol = document.createElement("ul");
+			ol.className = "wrap ul";
+			data.pendingTransactions.map((value, index) => {
+				var li = document.createElement("li");
+				li.className = "card mlb";
+				li.style.width = "16rem";
+				li.style.padding = "1rem";
+				li.style.borderRadius = "5px";
+				Object.entries(value).map((value) => {
+					if (value[0] !== "") {
+						var innerdiv = document.createElement("div");
+
+						innerdiv.innerHTML =
+							value[0] + " : " + "<span class='strong'>" + value[1] + "</span>";
+
+						li.appendChild(innerdiv);
+					}
+				});
+				ol.appendChild(li);
+			});
+			chainFrag.appendChild(ol);
+			document.querySelector("#pendingTransaction").appendChild(chainFrag);
+		};
+
+		const addTransactions = () => {
+			axios.get("/blockchain").then((res) => {
+				addBlockOnUI(res.data.chain);
+				changePendingTransactiononUI(res.data);
+			});
+		};
+
+		window.addEventListener("load", () => {
+			addTransactions();
+		});
+	</script>
+</html>
