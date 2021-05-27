@@ -12,11 +12,16 @@ const nodeAddress = uuid().split("-").join("");
 
 const bitcoin = new Blockchain();
 
-
 app.use(morgan("tiny"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use("/static", express.static("public"));
 
+app.get("/address", (req, res) => {
+	res.json({
+		address: nodeAddress,
+	});
+});
 // get entire blockchain
 app.get("/blockchain", function (req, res) {
 	res.send(bitcoin);
@@ -24,14 +29,13 @@ app.get("/blockchain", function (req, res) {
 
 // create a new transaction
 app.post("/transaction", function (req, res) {
-	console.log("in transaction");
+	// console.log("in transaction");
 	const newTransaction = req.body;
-	console.log(req);
+	// console.log(req);
 	const blockIndex =
 		bitcoin.addTransactionToPendingTransactions(newTransaction);
 	res.json({ note: `Transaction will be added in block ${blockIndex}.` });
 });
-
 
 // broadcast transaction
 app.post("/transaction/broadcast", function (req, res) {
@@ -59,7 +63,6 @@ app.post("/transaction/broadcast", function (req, res) {
 	});
 });
 
-
 // mine a block
 app.get("/mine", function (req, res) {
 	const lastBlock = bitcoin.getLastBlock();
@@ -68,6 +71,7 @@ app.get("/mine", function (req, res) {
 		transactions: bitcoin.pendingTransactions,
 		index: lastBlock["index"] + 1,
 	};
+
 	const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
 	const blockHash = bitcoin.hashBlock(
 		previousBlockHash,
@@ -105,7 +109,7 @@ app.get("/mine", function (req, res) {
 		})
 		.then((data) => {
 			res.json({
-				note: "New block mined & broadcast successfully",
+				note: "New block mined successfully",
 				block: newBlock,
 			});
 		});
@@ -214,8 +218,6 @@ app.get("/block-explorer", function (req, res) {
 app.get("/", (req, res) => {
 	res.sendFile("./block-explorer/home.html", { root: __dirname });
 });
-
-
 
 app.listen(port, function () {
 	console.log(`Listening on port ${port}...`);
