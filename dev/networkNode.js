@@ -67,52 +67,64 @@ app.post("/transaction/broadcast", function (req, res) {
 app.get("/mine", function (req, res) {
 	const lastBlock = bitcoin.getLastBlock();
 	const previousBlockHash = lastBlock["hash"];
-	const currentBlockData = {
-		transactions: bitcoin.pendingTransactions,
-		index: lastBlock["index"] + 1,
-	};
-
-	const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
-	const blockHash = bitcoin.hashBlock(
-		previousBlockHash,
-		currentBlockData,
-		nonce
-	);
-	const newBlock = bitcoin.createNewBlock(nonce, previousBlockHash, blockHash);
-
-	const requestPromises = [];
-	bitcoin.networkNodes.forEach((networkNodeUrl) => {
-		const requestOptions = {
-			uri: networkNodeUrl + "/receive-new-block",
-			method: "POST",
-			body: { newBlock: newBlock },
-			json: true,
+	if (bitcoin.pendingTransactions.length === 0) {
+		res.json({
+			note: "Seems like pending transaction is empty",
+			state: "failure",
+		});
+	} else {
+		const currentBlockData = {
+			transactions: bitcoin.pendingTransactions,
+			index: lastBlock["index"] + 1,
 		};
 
-		requestPromises.push(rp(requestOptions));
-	});
+		const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
+		const blockHash = bitcoin.hashBlock(
+			previousBlockHash,
+			currentBlockData,
+			nonce
+		);
+		const newBlock = bitcoin.createNewBlock(
+			nonce,
+			previousBlockHash,
+			blockHash
+		);
 
-	Promise.all(requestPromises)
-		.then((data) => {
+		const requestPromises = [];
+		bitcoin.networkNodes.forEach((networkNodeUrl) => {
 			const requestOptions = {
-				uri: bitcoin.currentNodeUrl + "/transaction/broadcast",
+				uri: networkNodeUrl + "/receive-new-block",
 				method: "POST",
-				body: {
-					amount: 12.5,
-					sender: "00",
-					recipient: nodeAddress,
-				},
+				body: { newBlock: newBlock },
 				json: true,
 			};
 
-			return rp(requestOptions);
-		})
-		.then((data) => {
-			res.json({
-				note: "New block mined successfully",
-				block: newBlock,
-			});
+			requestPromises.push(rp(requestOptions));
 		});
+
+		Promise.all(requestPromises)
+			.then((data) => {
+				const requestOptions = {
+					uri: bitcoin.currentNodeUrl + "/transaction/broadcast",
+					method: "POST",
+					body: {
+						amount: 12.5,
+						sender: "00",
+						recipient: nodeAddress,
+					},
+					json: true,
+				};
+
+				return rp(requestOptions);
+			})
+			.then((data) => {
+				res.json({
+					note: "New block mined successfully",
+					block: newBlock,
+					state: "success",
+				});
+			});
+	}
 });
 
 // receive new block
@@ -171,6 +183,7 @@ app.get("/consensus", function (req, res) {
 			res.json({
 				note: "Current chain has not been replaced.",
 				chain: bitcoin.chain,
+				status: "success",
 			});
 		} else {
 			bitcoin.chain = newLongestChain;
@@ -178,6 +191,7 @@ app.get("/consensus", function (req, res) {
 			res.json({
 				note: "This chain has been replaced.",
 				chain: bitcoin.chain,
+				status: "failure",
 			});
 		}
 	});

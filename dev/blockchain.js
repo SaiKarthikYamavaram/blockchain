@@ -28,11 +28,6 @@ Blockchain.prototype.createNewBlock = function (
 
 	this.pendingTransactions = [];
 	this.chain.push(newBlock);
-	// this.chain.push(newBlock);
-	// this.chain.push(newBlock);
-	// this.chain.push(newBlock);
-	// this.chain.push(newBlock);l̥
-
 	return newBlock;
 };
 

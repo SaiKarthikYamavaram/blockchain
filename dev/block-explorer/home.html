@@ -26,7 +26,7 @@
 			#blockchain,
 			#pendingTransaction,
 			#findBlock,
-			#mine {
+			#mine,#concensus {
 				margin: auto;
 				width: 80%;
 				padding: 1rem;
@@ -83,6 +83,7 @@
 			}
 			.mar05{
 				margin: 0.5rem !important;
+				height:40px !important;
 			}
 			body{
 				background: #090d16;
@@ -96,7 +97,7 @@
 			.noflex{
 				display: block  ;
 			}
-			.spinn{
+			.spinn,.spinConcensus{
 				visibility:hidden ;
 			}
 			.container-image{
@@ -161,6 +162,9 @@
 						<li class="nav-item">
 							<a class="nav-link" href="#mine">Mine Block</a>
 						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#concensus">Concensus</a>
+						</li>
 					</ul>
 				</div>
 
@@ -210,7 +214,7 @@
 					>
 					<input type="text" class="form-control" id="recipient" required />
 				</div>
-
+				<input type="button" name="reset_form"  id="hide_addtxn"  onclick="this.form.reset();" hidden >
 				<input type="submit" class="btn btn-dark" value="Add Transaction" />
 			</form>
 		</div>
@@ -219,27 +223,36 @@
 			<form
 				action="/transaction/broadcast/"
 				method="post"
-				onsubmit=" event.preventDefault(); return addTransactions()"
+				onsubmit=" event.preventDefault(); return findBlock()"
 			>
 				<div class="mb-3">
 					<label for="exampleFormControlInput1" class="form-label"
 						>Enter Block Hash</label
 					>
+
 					<input
 						type="text"
 						class="form-control"
 						id="hash"
-						placeholder="1620550979041"
+						placeholder="0000fb2f8dedc0afa4945c6427ab818799cb4f5e343bdcff0ec8b267e0211fa1"
 						required
 					/>
 				</div>
+				<input type="button" name="reset_form"  id="hide_findblock"  onclick="this.form.reset();" hidden >
 				<input type="submit" class="btn btn-dark" value="Find Block" />
 			</form>
 		</div>
 		
 		<div id="blockchain" class="card noflex" >
+			<div class="d-inline-flex justify-content-around"  >
+			<div>
 			<span><h2>Blocks in blockchain</h2></span>
-			<button class="btn btn-dark " onclick="init()">Refresh &#x21bb;</button>
+			<h5>No of blocks in blockchain <span id="noOfBlocks" ></span> </h5>
+		</div>
+			<div>
+			<button style="margin:20px" class="btn btn-dark " onclick="init()">Refresh &#x21bb;</button>
+		</div>
+	</div>
 			<br />
 			<br />
 			<div class="blocks wrap"></div>
@@ -260,7 +273,7 @@
 				</table>
 			</div>
 		</div>
-
+		<!-- mine -->
 		<div class="card " id="mine">
 			<h2>Mine Block</h2>
 			<h5>Create a new block out of pending transactions using Proof Of Work</h5>
@@ -273,16 +286,27 @@
 		</div>
 	</div>
 
+	<div class="card " id="concensus">
+		<h2>Check validity(Concensus)</h2>
+		<h5>Test validity of blockchain across the network</h5>
+		<div class="spinner-border mx-auto spinConcensus " role="status">
+			<span class="visually-hidden">Loading...</span>
+		  </div>
+		  <div>
+		<button class="btn btn-dark" onclick="concensus()" >Check Validity</button>
+	</div>
+</div>
+
 
 	<!-- Toast -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 5">
   <div id="liveToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="toast-header">
+    <div class="toast-header" id="toast" >
       <strong class="me-auto">Notification</strong>
       <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
-    <b class="toast-body mar05">
-	</b>
+    <div class="toast-body mar05">
+	</div>
   </div>
 </div>
 
@@ -345,12 +369,10 @@
 	<script>
 		var blocksTransactons = [];
 		const changeModleContent = (index)=>{
-			console.log(index,blocksTransactons[index])
 
 			var data = blocksTransactons[index];
 		
 			var chainFrag = document.createDocumentFragment();
-			// console.log(data);
 			data.forEach(((value, index) => {
 				var tr = document.createElement("tr");
 				var th = document.createElement("th");
@@ -375,7 +397,9 @@
 		};
 		
 		
-
+		const findBlock = ()=>{
+			document.querySelector('#hide_findblock').click()
+		}
 		const showToast = (message) =>{
 			const option = {
 				animation:true,
@@ -397,7 +421,7 @@
 
 		const addBlockOnUI = (data) => {
 			var chainFrag = document.createDocumentFragment();
-			// console.log(data)
+			document.querySelector('#noOfBlocks').textContent = data.length;
 			data.map((item, index) => {
 				var div = document.createElement("div");
 				div.className = "card mb box-shadow";
@@ -449,17 +473,31 @@
 			});
 			document.querySelector(".blocks").textContent = "";
 			document.querySelector(".blocks").appendChild(chainFrag);
-			console.log(blocksTransactons);
+			// console.log(blocksTransactons);
 		};
 
 		const addTransactions = (data)=>{
 			console.log(document.forms)
+
+
+			document.querySelector('#hide_addtxn').click()
 		}
 
 		const mineBlock = async ()=>{
 			document.querySelector('.spinn').style.visibility = "visible"
 			const result = await axios.get('/mine')
 			document.querySelector('.spinn').style.visibility = "hidden"
+			if(result.data.state!=="failure")
+			{
+				document.querySelector("#toast").classList += " bg-success ";
+				document.querySelector("#toast").style.color = "white";
+				init();
+
+			}
+			else{
+				document.querySelector("#toast").classList += " bg-danger ";
+				document.querySelector("#toast").style.color = "white";
+			}
 			showToast(result.data.note)
 		}
 	
@@ -468,7 +506,6 @@
 			var chainFrag = document.createDocumentFragment();
 			var ol = document.createElement("ul");
 			ol.className = "wrap ul";
-			console.log(data);
 			
 			data.pendingTransactions.map((value, index) => {
 				var tr = document.createElement("tr");
@@ -497,6 +534,24 @@
 				document.querySelector("#nodeName").textContent = res.data.address;
 			});
 		};
+
+		const concensus = async() => {
+			document.querySelector('.spinConcensus').style.visibility = "visible"
+			const result = await axios.get('/consensus')
+			document.querySelector('.spinConcensus').style.visibility = "hidden"
+			if(result.data.state!=="failure")
+			{
+				document.querySelector("#toast").classList += " bg-success ";
+				document.querySelector("#toast").style.color = "white";
+				init();
+
+			}
+			else{
+				document.querySelector("#toast").classList += " bg-danger ";
+				document.querySelector("#toast").style.color = "white";
+			}
+			showToast(result.data.note)
+		}
 
 		const init = () => {
 			axios.get("/blockchain").then((res) => {
