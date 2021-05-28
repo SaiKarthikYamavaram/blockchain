@@ -10,7 +10,7 @@ const rp = require("request-promise");
 
 const nodeAddress = uuid().split("-").join("");
 
-const bitcoin = new Blockchain();
+var bitcoin = new Blockchain();
 
 app.use(morgan("tiny"));
 app.use(express.json());
@@ -29,12 +29,14 @@ app.get("/blockchain", function (req, res) {
 
 // create a new transaction
 app.post("/transaction", function (req, res) {
-	// console.log("in transaction");
 	const newTransaction = req.body;
 	// console.log(req);
 	const blockIndex =
 		bitcoin.addTransactionToPendingTransactions(newTransaction);
-	res.json({ note: `Transaction will be added in block ${blockIndex}.` });
+	res.json({
+		note: `Transaction will be added in block ${blockIndex}.`,
+		status: "success",
+	});
 });
 
 // broadcast transaction
@@ -47,20 +49,25 @@ app.post("/transaction/broadcast", function (req, res) {
 	bitcoin.addTransactionToPendingTransactions(newTransaction);
 
 	const requestPromises = [];
-	bitcoin.networkNodes.forEach((networkNodeUrl) => {
-		const requestOptions = {
-			uri: networkNodeUrl + "/transaction",
-			method: "POST",
-			body: newTransaction,
-			json: true,
-		};
+	console.log(bitcoin.networkNodes);
+	try {
+		bitcoin.networkNodes.forEach((networkNodeUrl) => {
+			const requestOptions = {
+				uri: networkNodeUrl + "/transaction",
+				method: "POST",
+				body: newTransaction,
+				json: true,
+			};
 
-		requestPromises.push(rp(requestOptions));
-	});
+			requestPromises.push(rp(requestOptions));
+		});
 
-	Promise.all(requestPromises).then((data) => {
-		res.json({ note: "Transaction created and broadcast successfully." });
-	});
+		Promise.all(requestPromises).then((data) => {
+			res.json({ note: "Transaction created and broadcast successfully." });
+		});
+	} catch (error) {
+		console.log(error);
+	}
 });
 
 // mine a block
@@ -108,8 +115,8 @@ app.get("/mine", function (req, res) {
 					uri: bitcoin.currentNodeUrl + "/transaction/broadcast",
 					method: "POST",
 					body: {
-						amount: 12.5,
-						sender: "00",
+						amount: 100,
+						sender: "Host",
 						recipient: nodeAddress,
 					},
 					json: true,
@@ -147,6 +154,84 @@ app.post("/receive-new-block", function (req, res) {
 			newBlock: newBlock,
 		});
 	}
+});
+
+// register a node and broadcast it the network
+app.post("/register-and-broadcast-node", function (req, res) {
+	var newNodeUrl;
+	if (req.body.newNodeUrl[req.body.newNodeUrl.length - 1] === "/")
+		newNodeUrl = req.body.newNodeUrl.slice(0, -1);
+	else newNodeUrl = req.body.newNodeUrl;
+
+	console.log("newNodeUrl", newNodeUrl);
+	if (bitcoin.networkNodes.indexOf(newNodeUrl) == -1)
+		bitcoin.networkNodes.push(newNodeUrl);
+
+	const regNodesPromises = [];
+	bitcoin.networkNodes.forEach((networkNodeUrl) => {
+		const requestOptions = {
+			uri: networkNodeUrl + "/register-node",
+			method: "POST",
+			body: { newNodeUrl: newNodeUrl },
+			json: true,
+		};
+
+		regNodesPromises.push(rp(requestOptions));
+	});
+	try {
+	} catch (error) {}
+	Promise.all(regNodesPromises)
+		.catch((e) => {
+			console.log("error");
+		})
+		.then((data) => {
+			const bulkRegisterOptions = {
+				uri: newNodeUrl + "/register-nodes-bulk",
+				method: "POST",
+				body: {
+					allNetworkNodes: [...bitcoin.networkNodes, bitcoin.currentNodeUrl],
+				},
+				json: true,
+			};
+			console.log(1);
+
+			return rp(bulkRegisterOptions);
+		})
+		.then((data) => {
+			res.json({
+				note: "New node registered with network successfully.",
+				status: "success",
+			});
+		});
+});
+
+// register a node with the network
+app.post("/register-node", function (req, res) {
+	const newNodeUrl = req.body.newNodeUrl;
+
+	const nodeNotAlreadyPresent = bitcoin.networkNodes.indexOf(newNodeUrl) == -1;
+
+	const notCurrentNode = bitcoin.currentNodeUrl !== newNodeUrl;
+
+	if (nodeNotAlreadyPresent && notCurrentNode) {
+		bitcoin.networkNodes.push(newNodeUrl);
+	}
+
+	res.json({ note: "New node registered successfully." });
+});
+
+// register multiple nodes at once
+app.post("/register-nodes-bulk", function (req, res) {
+	const allNetworkNodes = req.body.allNetworkNodes;
+	allNetworkNodes.forEach((networkNodeUrl) => {
+		const nodeNotAlreadyPresent =
+			bitcoin.networkNodes.indexOf(networkNodeUrl) === -1;
+		const notCurrentNode = bitcoin.currentNodeUrl !== networkNodeUrl;
+		if (nodeNotAlreadyPresent && notCurrentNode)
+			bitcoin.networkNodes.push(networkNodeUrl);
+	});
+
+	res.json({ note: "Bulk registration successful." });
 });
 
 // consensus
@@ -225,10 +310,11 @@ app.get("/address/:address", function (req, res) {
 	});
 });
 
-// block explorer
-app.get("/block-explorer", function (req, res) {
-	res.sendFile("./block-explorer/index.html", { root: __dirname });
-});
+// // block explorer
+// app.get("/block-explorer", function (req, res) {
+// 	res.sendFile("./block-explorer/index.html", { root: __dirname });
+// });
+
 app.get("/", (req, res) => {
 	res.sendFile("./block-explorer/home.html", { root: __dirname });
 });

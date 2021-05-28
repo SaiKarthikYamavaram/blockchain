@@ -135,6 +135,7 @@ Blockchain.prototype.getTransaction = function (transactionId) {
 			if (transaction.transactionId === transactionId) {
 				correctTransaction = transaction;
 				correctBlock = block;
+				break;
 			}
 		});
 	});
