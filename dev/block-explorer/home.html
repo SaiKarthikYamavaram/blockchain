@@ -188,6 +188,70 @@
 			<image src="static/images/background.jpg" class="container-image">
 		</div>
 
+
+		<div id="blockchain" class="card noflex" >
+			<div class="d-inline-flex justify-content-around"  >
+			<div>
+			<span><h2>Blocks in blockchain</h2></span>
+			<h5>No of blocks in blockchain <span id="noOfBlocks" ></span> </h5>
+		</div>
+			<div>
+			<button style="margin:20px" class="btn btn-dark " onclick="init()">Refresh &#x21bb;</button>
+		</div>
+		
+	</div>
+			<br />
+			<br />
+			<div class="blocks wrap"></div>
+		</div>
+		<div class="card" id="pendingTransaction">
+			<h2>Pending Transactions  </h2>
+			<div class="table-responsive">
+				<table class="table table-bordered align-middle">
+					<thead class="table-dark">
+						<tr>
+							<th scope="col">S.no</th>
+							<th scope="col">Sender</th>
+							<th scope="col">Recipient</th>
+							<th scope="col">Amount</th>
+						</tr>
+					</thead>
+					<tbody id="pendingTransactionBody"> </tbody>
+				</table>
+			</div>
+		</div>
+
+		<div id="addNode" class="card">
+			<h1> Add new node </h1>
+			<h5>No of nodes in network <span id="noOfnodes" ></span> </h5>
+
+			<form
+				action="/register-and-broadcast-node"
+				method="post"
+				onsubmit=" event.preventDefault(); return addNode()"
+			>
+				<div class="mb-3">
+					<label for="exampleFormControlInput1" class="form-label"
+						>Enter new node URL</label
+					>
+
+					<input
+						type="url"
+						class="form-control"
+						id="newNodeUrl"
+						placeholder="http://localhost:3001"
+						required
+					/>
+				</div>
+				<input type="button" name="reset_form"  id="hide_addNode"  onclick="this.form.reset();" hidden >
+				<input type="submit" class="btn btn-dark" value="Find Block" />
+
+			</form>
+		</div>
+
+
+		
+
 		<div id="addTransaction" class="card">
 			<h1> Add Transaction </h1>
 			<form
@@ -223,6 +287,22 @@
 				<input type="submit" class="btn btn-dark" value="Add Transaction" />
 			</form>
 		</div>
+
+
+			<!-- mine -->
+			<div class="card " id="mine">
+				<h2>Mine Block</h2>
+				<h5>Create a new block out of pending transactions using Proof Of Work</h5>
+				<h5>Miner recieves rewards for mining</h5>
+				<div class="spinner-border mx-auto spinn " role="status">
+					<span class="visually-hidden">Loading...</span>
+				  </div>
+				  <div>
+				<button class="btn btn-dark" onclick="mineBlock()" >Mine Block</button>
+			</div>
+		</div>
+
+
 		<div id="findBlock" class="card">
 			<h1> Find Block </h1>
 			<form
@@ -250,75 +330,10 @@
 			</form>
 		</div>
 		
-		<div id="addNode" class="card">
-			<h1> Add newNode </h1>
-			<form
-				action="/register-and-broadcast-node"
-				method="post"
-				onsubmit=" event.preventDefault(); return addNode()"
-			>
-				<div class="mb-3">
-					<label for="exampleFormControlInput1" class="form-label"
-						>Enter new node URL</label
-					>
+		
 
-					<input
-						type="url"
-						class="form-control"
-						id="newNodeUrl"
-						placeholder="http://localhost:3001"
-						required
-					/>
-				</div>
-				<input type="button" name="reset_form"  id="hide_addNode"  onclick="this.form.reset();" hidden >
-				<input type="submit" class="btn btn-dark" value="Find Block" />
-
-			</form>
-		</div>
-
-
-		<div id="blockchain" class="card noflex" >
-			<div class="d-inline-flex justify-content-around"  >
-			<div>
-			<span><h2>Blocks in blockchain</h2></span>
-			<h5>No of blocks in blockchain <span id="noOfBlocks" ></span> </h5>
-		</div>
-			<div>
-			<button style="margin:20px" class="btn btn-dark " onclick="init()">Refresh &#x21bb;</button>
-		</div>
-	</div>
-			<br />
-			<br />
-			<div class="blocks wrap"></div>
-		</div>
-		<div class="card" id="pendingTransaction">
-			<h2>Pending Transactions  </h2>
-			<div class="table-responsive">
-				<table class="table table-bordered align-middle">
-					<thead class="table-dark">
-						<tr>
-							<th scope="col">S.no</th>
-							<th scope="col">Sender</th>
-							<th scope="col">Recipient</th>
-							<th scope="col">Amount</th>
-						</tr>
-					</thead>
-					<tbody id="pendingTransactionBody"> </tbody>
-				</table>
-			</div>
-		</div>
-		<!-- mine -->
-		<div class="card " id="mine">
-			<h2>Mine Block</h2>
-			<h5>Create a new block out of pending transactions using Proof Of Work</h5>
-			<h5>Miner recieves rewards for mining</h5>
-			<div class="spinner-border mx-auto spinn " role="status">
-				<span class="visually-hidden">Loading...</span>
-			  </div>
-			  <div>
-			<button class="btn btn-dark" onclick="mineBlock()" >Mine Block</button>
-		</div>
-	</div>
+		
+	
 
 	<div class="card " id="concensus">
 		<h2>Check validity(Concensus)</h2>
@@ -393,6 +408,9 @@
 				</div>
 			</div>
 		</div>
+
+
+		<footer style="height: 1rem; width: 1rem;" ></footer>
 	</body>
 
 
@@ -712,6 +730,9 @@
 		const init = () => {
 			blocksTransactons = []
 			axios.get("/blockchain").then((res) => {
+				
+				document.querySelector("#noOfnodes").textContent =  (res.data.networkNodes.length ===0)?1:res.data.networkNodes.length+1 ;
+				
 				addBlockOnUI(res.data.chain);
 				changePendingTransactiononUI(res.data);
 				updateUser();
