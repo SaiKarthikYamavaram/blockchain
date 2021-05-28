@@ -249,26 +249,46 @@ app.get("/consensus", function (req, res) {
 
 	Promise.all(requestPromises).then((blockchains) => {
 		const currentChainLength = bitcoin.chain.length;
-		let maxChainLength = currentChainLength;
-		let newLongestChain = null;
-		let newPendingTransactions = null;
-
+		var maxChainLength = currentChainLength;
+		var newLongestChain = null;
+		var newShortestChain = blockchains[0].chain;
+		var newPendingTransactions = null;
+		console.log(55);
 		blockchains.forEach((blockchain) => {
-			if (blockchain.chain.length > maxChainLength) {
+			console.log(59);
+
+			if (blockchain.chain.length >= maxChainLength) {
 				maxChainLength = blockchain.chain.length;
 				newLongestChain = blockchain.chain;
 				newPendingTransactions = blockchain.pendingTransactions;
 			}
+			if (blockchain.chain.length <= newShortestChain.length) {
+				newShortestChain = blockchain.chain;
+			}
 		});
+
+		// console.log(newShortestChain.length, "    ", newLongestChain.length);
+
+		// console.log(newLongestChain );
+
+
+		// console.warn();
+		// console.log(newShortestChain );
+
+
+		const a =  JSON.stringify(newLongestChain)
+		const b =  JSON.stringify(newShortestChain)
+
+
 
 		if (
 			!newLongestChain ||
-			(newLongestChain && !bitcoin.chainIsValid(newLongestChain))
+			(newLongestChain && bitcoin.chainIsValid(newLongestChain)) &&( a === b)
 		) {
 			res.json({
 				note: "Current chain has not been replaced.",
 				chain: bitcoin.chain,
-				status: "success",
+				state: "success",
 			});
 		} else {
 			bitcoin.chain = newLongestChain;
@@ -276,7 +296,7 @@ app.get("/consensus", function (req, res) {
 			res.json({
 				note: "This chain has been replaced.",
 				chain: bitcoin.chain,
-				status: "failure",
+				state: "failure",
 			});
 		}
 	});
