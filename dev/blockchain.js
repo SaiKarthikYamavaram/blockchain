@@ -84,7 +84,8 @@ Blockchain.prototype.proofOfWork = function (
 
 Blockchain.prototype.chainIsValid = function (blockchain) {
 	let validChain = true;
-
+	if(blockchain && blockchain.length > 0)
+	{
 	for (var i = 1; i < blockchain.length; i++) {
 		const currentBlock = blockchain[i];
 		const prevBlock = blockchain[i - 1];
@@ -113,8 +114,10 @@ Blockchain.prototype.chainIsValid = function (blockchain) {
 		!correctHash ||
 		!correctTransactions
 	)
-		validChain = false;
 
+		validChain = false;
+	}
+	else validChain= true
 	return validChain;
 };
 
